@@ -1,0 +1,23 @@
+services:
+  grafana:
+    image: grafana/grafana-oss
+    container_name: grafana
+    hostname: grafana
+    networks:
+      - siem-stack
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ../grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ../wazuh/config/wazuh_indexer_ssl_certs/wazuh.indexer.pem:/etc/ssl/certs/wazuh.indexer.pem
+      - ../wazuh/config/wazuh_indexer_ssl_certs/wazuh.indexer-key.pem:/etc/ssl/private/wazuh-indexer-key.pem
+    restart: unless-stopped
+
+
+networks:
+  siem-stack:
+    external: true
+
+volumes:
+   grafana-storage:

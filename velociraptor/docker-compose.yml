@@ -1,0 +1,28 @@
+services:
+  velociraptor:
+    container_name: velociraptor
+    image: wlambert/velociraptor
+    volumes:
+      - "velociraptor_data:/velociraptor/"
+    env_file:
+      - ../dot.env
+    networks:
+      - siem-stack
+    environment:
+      - VELOX_USER=${VELOX_USER}
+      - VELOX_PASSWORD=${VELOX_PASSWORD}
+      - VELOX_ROLE=${VELOX_ROLE}
+      - VELOX_SERVER_URL=${VELOX_SERVER_URL}
+      - VELOX_FRONTEND_HOSTNAME=${VELOX_FRONTEND_HOSTNAME}
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+      - "8889:8889"
+    restart: unless-stopped
+
+networks:
+  siem-stack:
+    external: true
+   
+volumes:
+  velociraptor_data:
