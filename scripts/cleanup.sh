@@ -4,6 +4,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$SCRIPT_DIR/.."
 DOT_ENV="$ROOT_DIR/dot.env"
 
+echo $DOT_ENV
+
 # List of services
 SERVICES=(wazuh graylog agents grafana velociraptor shuffle)
 
@@ -19,17 +21,21 @@ done
 
 docker-compose "${COMPOSE_ARGS[@]}" --env-file "$DOT_ENV" down --volumes --remove-orphans
 
-#removing the dot.env file
+# removing the dot.env file
 if [[ -f "$DOT_ENV" ]]; then
   echo "[*] Removing the combined env file $DOT_ENV file ..."
   rm "$DOT_ENV"
 else
-  echo "[*] Warning: There is no combined env file $DOT_ENV file ..."
+  echo "[*] Warning: There is no combined env file $DOT_ENV file"
+fi
 
 # Remove the Docker network if it exists
-if docker network ls --format '{{.Name}}' | grep -q '^siem-stack$'; then
-  echo "Removing Docker network 'siem-stack'..."
-  docker network rm siem-stack
-else
-  echo "Docker network 'siem-stack' does not exist. Skipping."
-fi
+for net in siem-stack shuffle; do
+  if ! docker network ls --format '{{.Name}}' | grep -q "^$net$"; then
+    echo "Removing Docker network '$net'..."
+    docker network rm "$net"
+  else
+    echo "Docker network '$net' does not exist. Skipping."
+  fi
+done
+
