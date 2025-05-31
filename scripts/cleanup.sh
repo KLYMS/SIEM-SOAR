@@ -4,10 +4,21 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$SCRIPT_DIR/.."
 DOT_ENV="$ROOT_DIR/dot.env"
 
-echo $DOT_ENV
+source $SCRIPT_DIR/output.sh
 
 # List of services
-SERVICES=(wazuh graylog agents grafana velociraptor shuffle)
+SERVICES=(wazuh graylog agents grafana velociraptor shuffle thehive-cortex)
+NETWORK_STACK=(siem-stack shuffle thehive-cortex)
+
+DEL_ALL=false
+DOCKER_ARGS=()
+for arg in "$@"; do
+  if [[ "$arg" == "--del-all" ]]; then
+    DEL_ALL=true
+  else
+    DOCKER_ARGS+=("$arg")
+  fi
+done
 
 COMPOSE_FILES=()
 for service in "${SERVICES[@]}"; do
@@ -19,23 +30,47 @@ for FILE in "${COMPOSE_FILES[@]}"; do
   COMPOSE_ARGS+=(-f "$FILE")
 done
 
-docker-compose "${COMPOSE_ARGS[@]}" --env-file "$DOT_ENV" down --volumes --remove-orphans
+if [[ "$DEL_ALL" == true ]]; then
+  error "You are about to delete all persistent data related to stack"
+  read -p "Are you sure you want to continue? [y/N] " confirm
+  if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+    warning "Aborted by user."
+    exit 1
+  fi
+fi
+
+if [[ "$DEL_ALL" == true ]]; then
+  for service in "${SERVICES[@]}"; do
+    CLEAN_SCRIPT="$ROOT_DIR/$service/clean.sh"
+    if [[ -x "$CLEAN_SCRIPT" ]]; then
+      info "Found cleaning script in $service"
+      bash "$CLEAN_SCRIPT"
+      success "Deleat all data from $service"
+    else
+      warning "No clean.sh found or not executable for $service"
+    fi
+  done
+  docker-compose "${COMPOSE_ARGS[@]}" --env-file "$DOT_ENV" down --volumes --remove-orphans $DOCKER_ARGS
+else
+  docker-compose "${COMPOSE_ARGS[@]}" --env-file "$DOT_ENV" down $DOCKER_ARGS
+fi
 
 # removing the dot.env file
 if [[ -f "$DOT_ENV" ]]; then
-  echo "[*] Removing the combined env file $DOT_ENV file ..."
-  rm "$DOT_ENV"
+  info "Removing the combined env file $DOT_ENV file ..."
+  rm -f "$DOT_ENV"
 else
-  echo "[*] Warning: There is no combined env file $DOT_ENV file"
+  warning "There is no combined env file $DOT_ENV file"
 fi
 
 # Remove the Docker network if it exists
-for net in siem-stack shuffle; do
+for net in $NETWORK_STACK; do
   if ! docker network ls --format '{{.Name}}' | grep -q "^$net$"; then
-    echo "Removing Docker network '$net'..."
+    info "Removing Docker network '$net'..."
     docker network rm "$net"
   else
-    echo "Docker network '$net' does not exist. Skipping."
+    warning "Docker network '$net' does not exist. Skipping."
   fi
 done
+
 

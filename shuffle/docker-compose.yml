@@ -4,8 +4,8 @@ services:
     container_name: shuffle-frontend
     hostname: shuffle-frontend
     ports:
-      - "${FRONTEND_PORT}:80"
-      - "${FRONTEND_PORT_HTTPS}:443"
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+      - "${FRONTEND_PORT_HTTPS}:${FRONTEND_PORT_HTTPS}"
     networks:
       - shuffle
     environment:
@@ -19,7 +19,7 @@ services:
     hostname: ${BACKEND_HOSTNAME}
     # Here for debugging:
     ports:
-      - "${BACKEND_PORT}:5001"
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
     networks:
       - shuffle
     volumes:
@@ -46,7 +46,7 @@ services:
       #- DOCKER_HOST=tcp://docker-socket-proxy:2375
       - ENVIRONMENT_NAME=Shuffle
       - ORG_ID=Shuffle
-      - BASE_URL=http://${OUTER_HOSTNAME}:5001
+      - BASE_URL=http://${OUTER_HOSTNAME}:${BACKEND_PORT}
       - DOCKER_API_VERSION=1.40
       - HTTP_PROXY=${HTTP_PROXY}
       - HTTPS_PROXY=${HTTPS_PROXY}
@@ -61,7 +61,7 @@ services:
     security_opt:
       - seccomp:unconfined
   opensearch:
-    image: opensearchproject/opensearch:2.19.1
+    image: opensearchproject/opensearch:${opensearch_image_version}
     hostname: shuffle-opensearch
     container_name: shuffle-opensearch
     environment:

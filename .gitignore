@@ -1,3 +1,19 @@
 ./wazuh/config/wazuh_indexer_ssl_certs/*
 ./shuffle/shuffle-database/*
+./test
+
+./thehive-cortex/cassandra/data/*
+./thehive-cortex/cassandra/logs/*
+
+./thehive-cortex/cortex/logs/*
+./thehive-cortex/cortex/neurons/*
+./thehive-cortex/cortex/cortex-jobs/*
+
+./thehive-cortex/elasticsearch/logs/*
+./thehive-cortex/elasticsearch/data/*
+
+./thehive-cortex/nginx/certs/*
+
+./thehive-cortex/thehive/data/*
+./thehive-cortex/thehive/logs/*
 

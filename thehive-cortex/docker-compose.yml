@@ -1,0 +1,223 @@
+services:
+  cassandra:
+    image: "cassandra:${cassandra_image_version}"
+    container_name: cassandra
+    hostname: cassandra
+    restart: unless-stopped
+    # user: ${UID}:${GID}
+    env_file:
+      - ../dot.env
+    environment:
+      - CASSANDRA_CLUSTER_NAME=TheHive
+      - CASSANDRA_AUTHENTICATOR=PasswordAuthenticator
+      - CASSANDRA_NUM_TOKENS=4
+      - HEAP_NEWSIZE=1280M
+      - MAX_HEAP_SIZE=200M
+    volumes:
+      - ../thehive-cortex/cassandra/data:/var/lib/cassandra
+      - ../thehive-cortex/cassandra/logs:/var/log/cassandra
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    # Prevent swap https://docs.docker.com/engine/containers/resource_constraints/#prevent-a-container-from-using-swap
+    memswap_limit: 2G
+    networks:
+      - thehive-cortex
+    healthcheck:
+      # Waiting for cqlsh command to succeed to make sure Cassandra is ready
+      test: ["CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'describe keyspaces' || exit 1"]
+      start_period: 120s
+      interval: 2s
+      timeout: 1s
+      retries: 3
+    labels:
+      com.strangebee.stack: "thehive-cortex-stack"
+      com.strangebee.service: "cassandra"
+      com.strangebee.role: "database"
+      com.strangebee.environment: "testing"
+      com.strangebee.version: "${cassandra_image_version}"
+      com.strangebee.dependency: "None"
+
+  elasticsearch:
+    image: "elasticsearch:${elasticsearch_image_version}"
+    container_name: elasticsearch
+    hostname: elasticsearch
+    restart: unless-stopped
+    # user: ${UID}:0
+    env_file:
+      - ../dot.env
+    environment:
+      - http.host=0.0.0.0
+      - discovery.type=single-node
+      - cluster.name=hive
+      - thread_pool.search.queue_size=100000
+      - thread_pool.write.queue_size=100000
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${elasticsearch_password} # Password for "elastic" default user
+      - ES_JAVA_OPTS=-Xms1G -Xmx1G
+    volumes:
+      - ../thehive-cortex/elasticsearch/data:/usr/share/elasticsearch/data
+      - ../thehive-cortex/elasticsearch/logs:/usr/share/elasticsearch/logs
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    memswap_limit: 2G
+    networks:
+      - thehive-cortex
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f -s -u 'elastic:${elasticsearch_password}' http://elasticsearch:9200/_cat/health || exit 1"]
+      start_period: 40s
+      interval: 2s
+      timeout: 1s
+      retries: 5
+    labels:
+      com.strangebee.stack: "thehive-cortex-stack"
+      com.strangebee.service: "elasticsearch"
+      com.strangebee.role: "indexing"
+      com.strangebee.environment: "testing"
+      com.strangebee.version: "${elasticsearch_image_version}"
+      com.strangebee.dependency: "None"
+
+  thehive:
+    image: "strangebee/thehive:${thehive_image_version}"
+    container_name: thehive
+    hostname: thehive
+    restart: unless-stopped
+    command: '--no-config --no-config-secret'
+    # user: ${UID}:${GID}
+    env_file:
+      - ../dot.env
+    environment:
+      - |
+        JAVA_OPTS=
+          -Xms1280M
+          -Xmx1280M
+          -XX:MaxMetaspaceSize=400m
+          -XX:ReservedCodeCacheSize=250m
+    volumes:
+      - ../thehive-cortex/thehive/config:/etc/thehive:ro
+      - ../thehive-cortex/thehive/data/files:/opt/thp/thehive/files
+      - ../thehive-cortex/thehive/logs:/var/log/thehive
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    memswap_limit: 2G
+    networks:
+      - thehive-cortex
+    ports:
+      - '9000:9000'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -f thehive:9000/thehive/api/status || exit 1"]
+      start_period: 40s
+      interval: 10s
+      timeout: 1s
+      retries: 5
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      cassandra:
+        condition: service_healthy
+    labels:
+      com.strangebee.stack: "thehive-cortex-stack"
+      com.strangebee.service: "thehive"
+      com.strangebee.role: "application"
+      com.strangebee.environment: "testing"
+      com.strangebee.version: "${thehive_image_version}"
+      com.strangebee.dependency: "elasticsearch, cassandra"
+
+  cortex:
+    image: "thehiveproject/cortex:${cortex_image_version}"
+    container_name: cortex
+    hostname: cortex
+    restart: unless-stopped
+    env_file:
+      - ../dot.env
+    environment:
+      - |
+        JAVA_OPTS=
+          -Xms1000M
+          -Xmx1000M
+          -XX:MaxMetaspaceSize=400m
+          -XX:ReservedCodeCacheSize=250m
+      - es_uri=http://elasticsearch:9200
+      - job_directory=/tmp/cortex-jobs
+      - docker_job_directory=${cortex_docker_job_directory}
+    volumes:
+      # Mounting docker socket in the container so that cortex can run jobs as containers
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Storing jobs under /tmp for now
+      - ../thehive-cortex/cortex/cortex-jobs:/tmp/cortex-jobs
+      - ../thehive-cortex/cortex/config:/etc/cortex:ro
+      - ../thehive-cortex/cortex/logs:/var/log/cortex
+      - ../thehive-cortex/cortex/neurons:/opt/cortexneurons
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    memswap_limit: 2G
+    networks:
+      - thehive-cortex
+    ports:
+      - '9001:9001'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -f cortex:9001/cortex/api/status || exit 1"]
+      start_period: 40s
+      interval: 10s
+      timeout: 1s
+      retries: 5
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    labels:
+      com.strangebee.stack: "thehive-cortex-stack"
+      com.strangebee.service: "cortex"
+      com.strangebee.role: "application"
+      com.strangebee.environment: "testing"
+      com.strangebee.version: "${cortex_image_version}"
+      com.strangebee.dependency: "elasticsearch"
+
+  nginx:
+    image: "nginx:${nginx_image_version}"
+    container_name: nginx
+    hostname: nginx
+    restart: unless-stopped
+    env_file:
+      - ../dot.env
+    environment:
+      SERVER_NAME: "${nginx_server_name}"
+      NGINX_SSL_TRUSTED_CERTIFICATE: "${nginx_ssl_trusted_certificate}"
+    volumes:
+      - ../thehive-cortex/nginx/templates:/etc/nginx/templates  # Custom Nginx configuration
+      - ../thehive-cortex/nginx/certs:/etc/nginx/certs  # Directory for custom certificates
+    ports:
+      - '443:443'
+    networks:
+      - thehive-cortex
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.000'
+    depends_on:
+      - thehive
+      - cortex
+    labels:
+      com.strangebee.stack: "thehive-cortex-stack"
+      com.strangebee.service: "nginx"
+      com.strangebee.role: "reverse proxy"
+      com.strangebee.environment: "testing"
+      com.strangebee.version: "${nginx_image_version}"
+      com.strangebee.dependency: "thehive, cortex"
+
+
+networks:
+  thehive-cortex:
+    external: true
