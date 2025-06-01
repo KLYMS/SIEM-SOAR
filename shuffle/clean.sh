@@ -13,7 +13,9 @@ for dir in "${DIRS[@]}"; do
     info "Cleaning: $dir"
     if [[ -d "$full_path" ]]; then
         # info "Cleaning $full_path"
-        find "$full_path" -mindepth 1 -exec rm -rf {} +
+        find "$full_path" -mindepth 1 \( \
+          ! -name ".gitkeep" \
+        \) -exec rm -rf {} +
         success "Cleaned: $dir"
     else
         warning "Directory not found: $dir"

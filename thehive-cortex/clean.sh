@@ -21,6 +21,7 @@ for base in "${DIRS[@]}"; do
         ! -name "application.conf" \
         ! -name "*.template" \
         ! -name "logback.xml" \
+        ! -name ".gitkeep" \
       \) -exec sudo rm -rf {} +
 
       # success "  Cleaned: $subdir"
