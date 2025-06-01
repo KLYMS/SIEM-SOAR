@@ -22,9 +22,13 @@ for service in "${SERVICES[@]}"; do
   ENV_FILES+=("$ROOT_DIR/$service/.env")
 
   # skipping shuffle service in COMPOSE_FILES
-  if [[ ("$service" == "shuffle") || ("$service" == "thehive-cortex") ]]; then
+  if [[ ("$service" == "shuffle") ]]; then
     continue
   fi
+
+  # if [[ ("$service" == "shuffle") || ("$service" == "thehive-cortex") ]]; then
+  #   continue
+  # fi
 
   COMPOSE_FILE="$ROOT_DIR/$service/docker-compose.yml"
   if [[ -f "$COMPOSE_FILE" ]]; then
@@ -42,8 +46,8 @@ for service in "${SERVICES[@]}"; do
     info "Found setup.sh script in $service"
     bash "$SETUP_SCRIPT"
     success "Successfully setup the env for $service"
-  else
-    warning "No setup.sh found or executable for $service"
+  # else
+  #   warning "No setup.sh found or executable for $service"
   fi
 done
 
@@ -72,18 +76,17 @@ for ENV_FILE in "${ENV_FILES[@]}"; do
   fi
 done
 
-
 COMPOSE_ARGS=()
 for FILE in "${COMPOSE_FILES[@]}"; do
   COMPOSE_ARGS+=(-f "$FILE")
 done
 
-for net in $NETWORK_STACK; do
+for net in "${NETWORK_STACK[@]}"; do
   if ! docker network ls --format '{{.Name}}' | grep -q "^$net$"; then
     info "Creating Docker network '$net'..."
-    docker network create --driver bridge "$net"
+    docker network create --driver bridge "$net" && success "Created Docker network '$net'"
   else
-    warning "Docker network '$net' already exists."
+    warning "Docker network '$net' already exists. skipping"
   fi
 done
 

@@ -71,13 +71,6 @@ services:
       GRAYLOG_SERVER_JAVA_OPTS: "-Dlog4j2.formatMsgNoLookups=true -Djavax.net.ssl.trustStore=/usr/share/graylog/ssl/cacerts -Djavax.net.ssl.trustStorePassword=changeit"
 
     user: root
-    # command: >
-    #   /bin/sh -c "
-    #   cp /opt/java/openjdk/lib/security/cacerts /usr/share/graylog/ssl/ &&
-    #   cd /usr/share/graylog/ssl/ &&
-    #   keytool -importcert -noprompt -keystore cacerts -storepass changeit -alias wazuh_root_ca -file root-ca.pem &&
-    #   /usr/share/graylog/bin/graylogctl restart 
-    #   "
 
     ports:
     - "5044:5044/tcp"   # Beats
@@ -95,16 +88,10 @@ services:
     networks:
       - siem-stack 
     volumes:
-      # - ./graylog/graylog-ssl-setup.sh:/usr/share/graylog/graylog-ssl-setup
-      # - ./graylog/graylog-inputs-setup.sh:/usr/share/graylog/graylog-inputs-setup
-      # - ./graylog/config/log4j2.xml:/usr/share/graylog/data/config/log4j2
-      # - ./graylog/config/graylog.conf:/usr/share/graylog/data/config/graylog.conf
       - "graylog_data:/usr/share/graylog/data"
-      # - /home/murali/Desktop/soc-automation/graylog/graylog-cert.sh:/usr/share/graylog/ssl/graylog-cert.sh
       - ../wazuh/config/wazuh_indexer_ssl_certs/root-ca.pem:/usr/share/graylog/ssl/root-ca.pem
       - ../graylog/graylog-cert.sh:/usr/share/graylog/ssl/graylog-cert.sh
-      # - ../graylog/cacerts:/usr/share/graylog/ssl/cacerts
-
+      - ../scripts/output.sh:/usr/share/graylog/ssl/output.sh
 
     restart: "on-failure"
 

@@ -47,12 +47,13 @@ if [[ "$DEL_ALL" == true ]]; then
       bash "$CLEAN_SCRIPT"
       success "Deleat all data from $service"
     else
-      warning "No clean.sh found or not executable for $service"
+      info "No clean.sh found or not executable for $service"
     fi
   done
+  warning "Removing all the data in docker volumes and stoping the containers..."
   docker-compose "${COMPOSE_ARGS[@]}" --env-file "$DOT_ENV" down --volumes --remove-orphans $DOCKER_ARGS
 else
-  docker-compose "${COMPOSE_ARGS[@]}" --env-file "$DOT_ENV" down $DOCKER_ARGS
+  docker-compose "${COMPOSE_ARGS[@]}" --env-file "$DOT_ENV" down --remove-orphans $DOCKER_ARGS
 fi
 
 # removing the dot.env file
@@ -64,10 +65,10 @@ else
 fi
 
 # Remove the Docker network if it exists
-for net in $NETWORK_STACK; do
-  if ! docker network ls --format '{{.Name}}' | grep -q "^$net$"; then
+for net in "${NETWORK_STACK[@]}"; do
+  if docker network ls --format '{{.Name}}' | grep -q "^$net$"; then
     info "Removing Docker network '$net'..."
-    docker network rm "$net"
+    docker network rm "$net" && success "Removed Docker network '$net'"
   else
     warning "Docker network '$net' does not exist. Skipping."
   fi
