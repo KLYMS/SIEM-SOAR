@@ -1,6 +1,5 @@
 # Open Source SIEM-SOAR Stack
-
-A comprehensive, containerized Security Information and Event Management (SIEM) and Security Orchestration, Automation, and Response (SOAR) laboratory environment for cybersecurity research, incident response automation, and threat detection experiments.
+A fully containerized Security Information and Event Management (SIEM) and Security Orchestration, Automation, and Response (SOAR) lab environment designed for cybersecurity research, incident response automation, and threat detection experiments. A lab environment for exploring and integrating open-source SIEM and SOAR tools. This Docker-based setup includes Wazuh, Graylog, Shuffle, TheHive, Cortex, Velociraptor, Grafana, and supporting services.
 
 ## 🎯 Overview
 
