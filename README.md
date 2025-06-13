@@ -5,11 +5,6 @@ A fully containerized Security Information and Event Management (SIEM) and Secur
 
 This Docker-based security stack integrates multiple open-source tools to provide a complete security operations center (SOC) environment:
 
-- **SIEM Capabilities**: Log collection, analysis, and correlation
-- **SOAR Functionality**: Security orchestration and automated response
-- **Threat Hunting**: Advanced endpoint detection and response
-- **Visualization**: Real-time security dashboards and reporting
-
 ### 🛠️ Included Components
 
 | Component | Purpose | Version |
@@ -44,22 +39,20 @@ This Docker-based security stack integrates multiple open-source tools to provid
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/siem-soar-lab.git
-cd siem-soar-lab
+git clone git@github.com:KLYMS/SIEM-SOAR.git
+cd SIEM-SOAR
 ```
 
 ### 2. Pre-Deployment Configuration
 
 #### Generate Wazuh SSL Certificates
-
+Instructions for running this container/script can be found in the <a href="https://github.com/wazuh/wazuh-docker">Official Wazuh Docker Repo</a> and also under the specific subdirectory.
 Secure communication requires SSL certificates for Wazuh components:
 
 ```bash
 # Generate certificates using the official Wazuh script
-docker compose -f wazuh/generate-indexer-certs.yml run --rm generate-certs
-
-# Move certificates to the appropriate directory
-mv generated-certs/* wazuh/config/wazuh_indexer_ssl_certs/
+cd wazuh/
+docker-compose -f generate-indexer-certs.yml run --rm generate-certs
 ```
 
 #### Configure TLS for TheHive & Cortex
@@ -87,11 +80,11 @@ mv generated-certs/* wazuh/config/wazuh_indexer_ssl_certs/
 # Deploy all services (except Shuffle)
 ./scripts/up.sh -d
 
-# Configure Wazuh-Graylog integration (required for secure communication)
-./graylog/graylog-wrapper.sh
-
 # Deploy Shuffle SOAR separately
 cd shuffle && docker compose up -d && cd ..
+
+# Configure Wazuh-Graylog integration (required for secure communication)
+./graylog/graylog-wrapper.sh
 ```
 
 ### Stopping and Cleanup
@@ -110,7 +103,7 @@ cd shuffle && docker compose up -d && cd ..
 > - Generated logs in service directories
 > - Configuration files created during deployment
 > 
-> This option is particularly useful for practice environments and testing scenarios where you want to start fresh.
+> This option is handy for practice environments and testing scenarios where you want to start fresh.
 
 
 ### 4. Verify Deployment
@@ -122,7 +115,7 @@ Check that all services are running:
 docker ps
 
 # Check service health
-docker compose ps
+docker-compose ps
 ```
 
 ## 🌐 Service Access
@@ -148,23 +141,16 @@ Verify component functionality:
 
 ```bash
 # Check all services status
-docker compose ps
+docker ps
 
 # View specific service logs
-docker compose logs -f wazuh.manager
-docker compose logs -f graylog
-docker compose logs -f shuffle
+docker logs -f wazuh.manager
+docker logs -f graylog
+docker logs -f shuffle
 
 # Monitor resource usage
 docker stats
 ```
-
-### Integration Testing
-
-1. **Log Ingestion**: Verify logs are flowing from the test agent to Wazuh and Graylog
-2. **Alert Generation**: Confirm security rules are triggering alerts
-3. **SOAR Workflows**: Test automated response playbooks in Shuffle
-4. **Incident Management**: Create and manage test incidents in TheHive
 
 ## 🔧 Troubleshooting
 
@@ -173,10 +159,10 @@ docker stats
 **Services Not Starting**
 ```bash
 # Check container logs
-docker compose logs <service-name>
+docker logs <service-name>
 
-# Restart specific service
-docker compose restart <service-name>
+# Restart a specific service
+docker restart <service-name>
 ```
 
 **Memory Issues**
@@ -195,7 +181,7 @@ Monitor service health through logs:
 
 ```bash
 # Real-time log monitoring
-docker compose logs -f --tail=100
+docker logs -f <service-name> --tail=100
 ```
 
 ## 📚 Documentation
@@ -210,9 +196,9 @@ docker compose logs -f --tail=100
 
 ## 🎉 Post-Deployment
 
-Congratulations! You've successfully deployed a complete SIEM-SOAR stack. After you've reached this point, you can take a short break to pat yourself on the back, it's all downhill from here on out.
+Congratulations! You've successfully deployed a complete SIEM-SOAR stack. After you've reached this point, you can take a short break to pat yourself on the back; it's all downhill from here on out.
 
-Please make sure to create any necessary users in each of the tools for the integrations to work correctly.
+Please ensure that you create any necessary users in each of the tools for the integrations to function correctly.
 
 
 ## 📄 License
@@ -224,6 +210,3 @@ See [LICENSE](LICENSE) for full license text.
 
 
 **Built with ❤️ for the cybersecurity community**
-
-*Empowering security professionals with open-source tools and collaborative innovation.*
->>>>>>> 8ed1d1c40c6d13ec9509cadcd54c0be9b1408e1d
