@@ -14,7 +14,6 @@ define_hostname(){
 
 }
 
-
 ELASTICSEARCH_PASSWORD=$(cat /dev/urandom | LC_CTYPE=C tr -dc '[:alnum:]' | fold -w 64 | head -n 1)
 
 ## INIT THEHIVE CONFIGURATION
