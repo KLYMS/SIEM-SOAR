@@ -200,13 +200,4 @@ Congratulations! You've successfully deployed a complete SIEM-SOAR stack. After 
 
 Please ensure that you create any necessary users in each of the tools for the integrations to function correctly.
 
-
-## 📄 License
-
-This project is licensed under the **MIT License**. You are free to use, modify, and distribute this software for personal or commercial purposes, provided that the original copyright and license notice are included.
-
-See [LICENSE](LICENSE) for full license text.
-
-
-
 **Built with ❤️ for the cybersecurity community**
